@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>1899.12.30 00:00:00.000.295,=D:\WebView4Delphi-main\demos\Delphi_VCL\TabbedBrowser\Unit2.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.656,=D:\WebView4Delphi-main\demos\Delphi_VCL\TabbedBrowser\Unit4.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.181,=D:\WebView4Delphi-main\demos\Delphi_VCL\TabbedBrowser\Unit3.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.802,=D:\WebView4Delphi-main\demos\Delphi_VCL\TabbedBrowser\Unit3.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.137,=D:\WebView4Delphi-main\demos\Delphi_VCL\TabbedBrowser\Unit3.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.280,D:\WebView4Delphi-main\demos\Delphi_VCL\TabbedBrowser\Unit1.pas=D:\WebView4Delphi-main\demos\Delphi_VCL\TabbedBrowser\Luki.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.355,=D:\WebView4Delphi-main\demos\Delphi_VCL\TabbedBrowser\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.355,=D:\WebView4Delphi-main\demos\Delphi_VCL\TabbedBrowser\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.337,D:\WebView4Delphi-main\demos\Delphi_VCL\TabbedBrowser\ProxyModule.pas=D:\WebView4Delphi-main\demos\Delphi_VCL\TabbedBrowser\Unit3.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.797,D:\WebView4Delphi-main\demos\Delphi_VCL\TabbedBrowser\ProxyModule.pas=</Transaction>
+  </Transactions>
+</BorlandProject>

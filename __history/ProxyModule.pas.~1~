@@ -1,0 +1,69 @@
+unit ProxyModule;
+
+interface
+
+uses
+  System.SysUtils, System.Classes, IdContext, IdTCPClient, IdTCPServer, IdSocks, IdGlobal;
+
+type
+  TProxyServer = class
+  public
+    procedure Execute(AContext: TIdContext);
+  end;
+
+implementation
+
+{ TProxyServer }
+
+procedure TProxyServer.Execute(AContext: TIdContext);
+var
+  LClient: TIdTCPClient;
+  LBuffer: TIdBytes;
+begin
+  LClient := TIdTCPClient.Create(nil);
+  try
+    LClient.Socket.TransparentProxy := TIdSocksInfo.Create(LClient);
+    with LClient.Socket.TransparentProxy as TIdSocksInfo do
+    begin
+      Version := svSocks5;
+      Host := '127.0.0.1';
+      Port := 9050;
+    end;
+
+    LClient.Host := 'remote.onion.address'; // ”кажите реальный адрес
+    LClient.Port := 3128; // ”кажите реальный порт
+    LClient.Connect;
+
+    try
+      while AContext.Connection.Connected and LClient.Connected do
+      begin
+        if AContext.Connection.IOHandler.InputBufferIsEmpty then
+        begin
+          AContext.Connection.IOHandler.CheckForDataOnSource(100);
+          AContext.Connection.IOHandler.CheckForDisconnect;
+          if AContext.Connection.IOHandler.InputBufferIsEmpty then
+            Continue;
+        end;
+        AContext.Connection.IOHandler.InputBuffer.ExtractToBytes(LBuffer);
+        LClient.IOHandler.Write(LBuffer);
+
+        if LClient.IOHandler.InputBufferIsEmpty then
+        begin
+          LClient.IOHandler.CheckForDataOnSource(100);
+          LClient.IOHandler.CheckForDisconnect;
+          if LClient.IOHandler.InputBufferIsEmpty then
+            Continue;
+        end;
+        LClient.IOHandler.InputBuffer.ExtractToBytes(LBuffer);
+        AContext.Connection.IOHandler.Write(LBuffer);
+      end;
+    finally
+      LClient.Disconnect;
+    end;
+  finally
+    LClient.Free;
+  end;
+end;
+
+end.
+

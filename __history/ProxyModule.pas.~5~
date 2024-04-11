@@ -1,0 +1,132 @@
+unit ProxyModule;
+
+
+interface
+
+uses
+  System.Classes, Winapi.Winsock2, System.SysUtils;
+
+type
+  TProxyServer = class
+  private
+    FListenThread: TThread;
+    FActive: Boolean;
+    procedure SetActive(Value: Boolean);
+  public
+    constructor Create;
+    destructor Destroy; override;
+    property Active: Boolean read FActive write SetActive;
+  end;
+
+implementation
+
+type
+  TProxyThread = class(TThread)
+  private
+    FClientSock: TSocket;
+  protected
+    procedure Execute; override;
+  public
+    constructor Create(ClientSock: TSocket);
+  end;
+
+constructor TProxyServer.Create;
+begin
+  inherited Create;
+  FActive := False;
+end;
+
+destructor TProxyServer.Destroy;
+begin
+  Active := False;
+  inherited;
+end;
+
+
+
+{ TProxyThread }
+
+constructor TProxyThread.Create(ClientSock: TSocket);
+begin
+  inherited Create(False);
+  FClientSock := ClientSock;
+  FreeOnTerminate := True;
+end;
+function ConnectToSOCKS5Proxy(const ProxyAddr: string; ProxyPort: Word; const DestAddr: string; DestPort: Word): TSocket;
+var
+  Addr: TSockAddrIn;
+  Sock: TSocket;
+  HostEnt: PHostEnt;
+  BytesSent, BytesReceived: Integer;
+  Req, Resp: array of Byte;
+begin
+  Sock := socket(AF_INET, SOCK_STREAM, 0);
+  if Sock = INVALID_SOCKET then RaiseLastOSError;
+
+  Addr.sin_family := AF_INET;
+  Addr.sin_port := htons(ProxyPort);
+  Addr.sin_addr.S_addr := inet_addr(PAnsiChar(AnsiString(ProxyAddr)));
+
+  if connect(Sock, TSockAddr(Addr), SizeOf(Addr)) <> 0 then RaiseLastOSError;
+
+  // Начальное приветствие SOCKS5, где сообщаем, что не будет аутентификации
+  SetLength(Req, 3);
+  Req[0] := $05; // Версия SOCKS5
+  Req[1] := $01; // Количество методов аутентификации
+  Req[2] := $00; // NO AUTHENTICATION REQUIRED
+  BytesSent := send(Sock, Req[0], Length(Req), 0);
+  if BytesSent <> Length(Req) then RaiseLastOSError;
+
+  // Получаем ответ от SOCKS5 прокси
+  SetLength(Resp, 2);
+  BytesReceived := recv(Sock, Resp[0], Length(Resp), 0);
+  if (BytesReceived <> Length(Resp)) or (Resp[1] <> $00) then
+    raise Exception.Create('SOCKS5 authentication failed or invalid response.');
+
+  // Отправляем запрос на подключение к целевому серверу
+  // Здесь для упрощения используем IPv4 адрес
+  SetLength(Req, 10);
+  Req[0] := $05; // версия SOCKS5
+  Req[1] := $01; // команда CONNECT
+  Req[2] := $00; // зарезервировано
+  Req[3] := $01; // тип адреса, IPv4
+  Move(inet_addr(PAnsiChar(AnsiString(DestAddr))), Req[4], 4); // IP адрес целевого сервера
+  PWord(@Req[8])^ := htons(DestPort); // порт в сетевом порядке байтов
+  BytesSent := send(Sock, Req[0], Length(Req), 0);
+  if BytesSent <> Length(Req) then RaiseLastOSError;
+
+  // Читаем ответ прокси на запрос соединения
+  SetLength(Resp, 10);
+  BytesReceived := recv(Sock, Resp[0], Length(Resp), 0);
+  if (BytesReceived <> Length(Resp)) or (Resp[1] <> $00) then
+    raise Exception.Create('SOCKS5 proxy connection failed.');
+
+  Result := Sock;
+end;
+
+procedure TProxyThread.Execute;
+var
+  RemoteSock: TSocket;
+  Buffer: array[0..4095] of Byte;
+  BytesRead: Integer;
+begin
+  RemoteSock := ConnectToSOCKS5Proxy('127.0.0.1', 9050, 'target.onion.address', 3328);
+  if RemoteSock = INVALID_SOCKET then Exit;
+
+  try
+    while not Terminated do
+    begin
+      BytesRead := recv(FClientSock, Buffer, SizeOf(Buffer), 0);
+      if BytesRead > 0 then send(RemoteSock, Buffer, BytesRead, 0) else Break;
+
+      BytesRead := recv(RemoteSock, Buffer, SizeOf(Buffer), 0);
+      if BytesRead > 0 then send(FClientSock, Buffer, BytesRead, 0) else Break;
+    end;
+  finally
+    closesocket(RemoteSock);
+    closesocket(FClientSock);
+  end;
+end;
+
+end.
+

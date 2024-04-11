@@ -1,0 +1,109 @@
+unit ProxyModule;
+
+
+
+interface
+
+uses
+  System.Classes, Winapi.Winsock2, System.SysUtils;
+
+type
+  TProxyServer = class
+  private
+    FListenThread: TThread;
+    FActive: Boolean;
+    procedure SetActive(Value: Boolean);
+  public
+    constructor Create;
+    destructor Destroy; override;
+    property Active: Boolean read FActive write SetActive;
+  end;
+
+implementation
+
+type
+  TListenThread = class(TThread)
+  protected
+    procedure Execute; override;
+  end;
+
+var
+  ListenSock: TSocket = INVALID_SOCKET;
+
+{ TProxyServer }
+
+constructor TProxyServer.Create;
+begin
+  inherited Create;
+  FActive := False;
+end;
+
+destructor TProxyServer.Destroy;
+begin
+  Active := False;
+  inherited;
+end;
+
+procedure TProxyServer.SetActive(Value: Boolean);
+begin
+  if FActive <> Value then
+  begin
+    if Value then
+    begin
+      // «апуск прослушивающего потока
+      FListenThread := TListenThread.Create(False);
+    end
+    else
+    begin
+      // ќстановка прослушивающего потока
+      FListenThread.Terminate;
+      FListenThread.WaitFor;
+      FreeAndNil(FListenThread);
+
+      if ListenSock <> INVALID_SOCKET then
+      begin
+        closesocket(ListenSock);
+        ListenSock := INVALID_SOCKET;
+      end;
+    end;
+    FActive := Value;
+  end;
+end;
+
+{ TListenThread }
+
+procedure TListenThread.Execute;
+var
+  ClientSock: TSocket;
+  Addr: sockaddr_in;
+begin
+  ListenSock := socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  if ListenSock = INVALID_SOCKET then RaiseLastOSError;
+
+  FillChar(Addr, SizeOf(Addr), 0);
+  Addr.sin_family := AF_INET;
+  Addr.sin_port := htons(3128);
+  Addr.sin_addr.S_addr := INADDR_ANY;
+
+  if bind(ListenSock, PSockAddr(@Addr)^, SizeOf(Addr)) <> 0 then
+    RaiseLastOSError;
+
+  if listen(ListenSock, SOMAXCONN) <> 0 then
+    RaiseLastOSError;
+
+  while not Terminated do
+  begin
+    ClientSock := accept(ListenSock, nil, nil);
+    if ClientSock = INVALID_SOCKET then Continue;
+
+    if Terminated then
+    begin
+      closesocket(ClientSock);
+      Break;
+    end;
+
+    // «десь можно создать потоки дл€ обработки подключений, как было показано ранее
+  end;
+end;
+
+end.

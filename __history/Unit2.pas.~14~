@@ -1,0 +1,48 @@
+unit Unit2;
+
+interface
+
+uses
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ExtCtrls, JvExExtCtrls,
+  JvExtComponent, JvCaptionPanel, JvPanel, JvExControls, JvGradientHeaderPanel,
+  Vcl.StdCtrls, JvExStdCtrls, JvMemo, Vcl.Buttons;
+
+type
+  TForm2 = class(TForm)
+    JvGradientHeaderPanel1: TJvGradientHeaderPanel;
+    JvPanel1: TJvPanel;
+    JvPanel2: TJvPanel;
+    JvMemo1: TJvMemo;
+    SpeedButton1: TSpeedButton;
+    CheckBox1: TCheckBox;
+    SpeedButton2: TSpeedButton;
+    SpeedButton3: TSpeedButton;
+    procedure SpeedButton1Click(Sender: TObject);
+    procedure SpeedButton2Click(Sender: TObject);
+  private
+    { Private declarations }
+  public
+    { Public declarations }
+  end;
+
+var
+  Form2: TForm2;
+
+implementation
+       uses uMainForm;
+{$R *.dfm}
+
+procedure TForm2.SpeedButton1Click(Sender: TObject);
+begin
+    MainForm.AddTabExtBtnClick(MainForm,'https://bridges.torproject.org/bridges/?transport=obfs4');
+    SpeedButton1.Enabled:=false;
+end;
+
+procedure TForm2.SpeedButton2Click(Sender: TObject);
+begin
+JVMemo1.Clear;
+Close;
+end;
+
+end.
